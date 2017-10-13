@@ -18,7 +18,7 @@ import org.opencv.android.OpenCVLoader;
 
 public class EdgesActivity extends AppCompatActivity {
 
-    public static Uri path;
+    public static Bitmap img;
     ImageView imageView;
 
     ImageView detectEdgesImageView;
@@ -31,9 +31,9 @@ public class EdgesActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detect_edges);
-        path = (Uri)getIntent().getExtras().get("image");
+        img = MainActivity.bmap;
         try {
-            detectEdges(MediaStore.Images.Media.getBitmap(this.getContentResolver(), path));
+            detectEdges(img);
         } catch (Exception e) {
             e.printStackTrace();
         }

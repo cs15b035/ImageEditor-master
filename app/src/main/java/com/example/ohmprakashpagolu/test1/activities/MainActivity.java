@@ -13,6 +13,7 @@ import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -23,14 +24,19 @@ import android.widget.Toast;
 
 import com.example.ohmprakashpagolu.test1.R;
 
+import java.io.File;
+import java.io.FileOutputStream;
+
 import static com.example.ohmprakashpagolu.test1.R.id.imgView;
 
 public class MainActivity extends AppCompatActivity {
 
+    private boolean flag = false;
     private static int RESULT_LOAD_IMAGE = 1;
     private static int PIC_CROP = 2;
     private static int REQUEST_IMAGE_CAPTURE = 3;
     public static Uri selectedImage;
+    public static Bitmap bmap;
     public static int ct = 0;
     public static float rotation = 0;
     protected String[] requestedPermissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
@@ -45,6 +51,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 rotation = 0;
+                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                flag = true;
+                startActivityForResult(intent,0);
 
             }
         });
@@ -61,13 +70,28 @@ public class MainActivity extends AppCompatActivity {
         });
 
         Button buttonSaveImage = (Button) findViewById(R.id.buttonSaveImage);
-        buttonTakeImage.setOnClickListener(new View.OnClickListener() {
+        buttonSaveImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 ImageView imageView = (ImageView) findViewById(imgView);
                 BitmapDrawable draw = (BitmapDrawable) imageView.getDrawable();
                 Bitmap bitmap = draw.getBitmap();
-                MediaStore.Images.Media.insertImage(getContentResolver(), bitmap, "image_new" + ct , "photo");
+                File file = new File(Environment
+                        .getExternalStorageDirectory()
+                        + File.separator
+                        + "/DCIM/Camera/" + "image_new" + Integer.toString(ct++) + ".png");
+                FileOutputStream fos = null;
+                try {
+                    fos = new FileOutputStream(file);
+                    if (fos != null) {
+                        bitmap.compress(Bitmap.CompressFormat.PNG, 90, fos);
+                        fos.close();
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+                //MediaStore.Images.Media.insertImage(getContentResolver(), bitmap, "image_new" + ct , "photo");
             }
         });
 
@@ -93,7 +117,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 Intent i = new Intent(getApplicationContext(),EdgesActivity.class);
-                i.putExtra("image",selectedImage);
+                ImageView imageView = (ImageView)findViewById(R.id.imgView);
+                bmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
+                //i.putExtra("image",((BitmapDrawable)imageView.getDrawable()).getBitmap());
                 startActivity(i);
             }
         });
@@ -120,9 +146,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (progress <= 5) {
-                    progress = 1 - progress / 5;
+                    progress = 1 - progress / 50;
                 } else {
-                    progress = 1 + (progress / 10) * 9;
+                    progress = 1 + (progress / 100) * 9;
                 }
                 ImageView imageView = (ImageView)findViewById(R.id.imgView);
                 Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
@@ -174,7 +200,13 @@ public class MainActivity extends AppCompatActivity {
             ImageView imageView = (ImageView) findViewById(imgView);
             imageView.setImageBitmap(selectedBitmap);
         }
+        if(flag) {
+            flag = false;
+            Bitmap bitmap = (Bitmap) data.getExtras().get("data");
+            ImageView imageView = (ImageView) findViewById(R.id.imgView);
+            imageView.setImageBitmap(bitmap);
 
+        }
     }
 
     private void performCrop(Uri picUri) {
@@ -194,6 +226,9 @@ public class MainActivity extends AppCompatActivity {
             toast.show();
         }
     }
+
+
+
 
 
 }
