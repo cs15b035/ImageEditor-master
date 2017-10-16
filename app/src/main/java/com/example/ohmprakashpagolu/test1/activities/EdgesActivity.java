@@ -1,39 +1,35 @@
 package com.example.ohmprakashpagolu.test1.activities;
 
 import android.graphics.Bitmap;
-import android.net.Uri;
 import android.os.Bundle;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.widget.ImageView;
 
 import com.example.ohmprakashpagolu.test1.R;
 
+import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.android.OpenCVLoader;
 
 public class EdgesActivity extends AppCompatActivity {
 
-    public static Bitmap img;
-    ImageView imageView;
+    public static Image img;
 
-    ImageView detectEdgesImageView;
     static {
         if (!OpenCVLoader.initDebug()) {
             // Handle initialization error
         }
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detect_edges);
-        img = MainActivity.bmap;
+        img = MainActivity.img;
         try {
-            detectEdges(img);
+            detectEdges(img.getBitmap());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -47,7 +43,7 @@ public class EdgesActivity extends AppCompatActivity {
         Imgproc.Canny(edges, edges, 80, 100);
         Bitmap resultBitmap = Bitmap.createBitmap(edges.cols(), edges.rows(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(edges, resultBitmap);
-        ImageView imageView = (ImageView)findViewById(R.id.image_view);
+        ImageView imageView = (ImageView) findViewById(R.id.image_view);
         imageView.setImageBitmap(resultBitmap);
     }
 

@@ -1,15 +1,10 @@
 package com.example.ohmprakashpagolu.test1.activities;
 
-import android.Manifest;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
-import android.graphics.ColorMatrix;
-import android.graphics.ColorMatrixColorFilter;
-import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,15 +26,14 @@ import static com.example.ohmprakashpagolu.test1.R.id.imgView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private boolean flag = false;
     private static int RESULT_LOAD_IMAGE = 1;
     private static int PIC_CROP = 2;
-    private static int REQUEST_IMAGE_CAPTURE = 3;
+    public static int REQUEST_TAKE_IMAGE = 3;
     public static Uri selectedImage;
-    public static Bitmap bmap;
+    public static Bitmap cbmap;
+    public static Image img;
     public static int ct = 0;
-    public static float rotation = 0;
-    protected String[] requestedPermissions = new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE};
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -50,10 +44,8 @@ public class MainActivity extends AppCompatActivity {
         buttonTakeImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                rotation = 0;
                 Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                flag = true;
-                startActivityForResult(intent,0);
+                startActivityForResult(intent, REQUEST_TAKE_IMAGE);
 
             }
         });
@@ -63,7 +55,6 @@ public class MainActivity extends AppCompatActivity {
         buttonLoadImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View arg0) {
-                rotation = 0;
                 Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
                 startActivityForResult(i, RESULT_LOAD_IMAGE);
             }
@@ -73,9 +64,7 @@ public class MainActivity extends AppCompatActivity {
         buttonSaveImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ImageView imageView = (ImageView) findViewById(imgView);
-                BitmapDrawable draw = (BitmapDrawable) imageView.getDrawable();
-                Bitmap bitmap = draw.getBitmap();
+                Bitmap bitmap = img.getBitmap();
                 File file = new File(Environment
                         .getExternalStorageDirectory()
                         + File.separator
@@ -108,24 +97,24 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View arg0) {
                 ImageView imageView = (ImageView) findViewById(imgView);
-                imageView.setRotation(rotation);
-                rotation += 90;
+                img.rotate();
+                imageView.setImageBitmap(img.getBitmap());
             }
         });
+
         Button buttonEdgeDetect = (Button) findViewById(R.id.buttonEdgeDetect);
         buttonEdgeDetect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent i = new Intent(getApplicationContext(),EdgesActivity.class);
-                ImageView imageView = (ImageView)findViewById(R.id.imgView);
-                bmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
-                //i.putExtra("image",((BitmapDrawable)imageView.getDrawable()).getBitmap());
+                Intent i = new Intent(getApplicationContext(), EdgesActivity.class);
+                ImageView imageView = (ImageView) findViewById(R.id.imgView);
+                img.setBitmap(((BitmapDrawable) imageView.getDrawable()).getBitmap());
                 startActivity(i);
             }
         });
 
 
-        final SeekBar SeekBar_contrast=(SeekBar)findViewById(R.id.SeekBar1);
+        final SeekBar SeekBar_contrast = (SeekBar) findViewById(R.id.SeekBar1);
         SeekBar_contrast.setMax(10);
         SeekBar_contrast.setProgress((5));
         SeekBar_contrast.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
@@ -145,44 +134,24 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (progress <= 5) {
-                    progress = 1 - progress / 50;
-                } else {
-                    progress = 1 + (progress / 100) * 9;
-                }
-                ImageView imageView = (ImageView)findViewById(R.id.imgView);
-                Bitmap bitmap = ((BitmapDrawable)imageView.getDrawable()).getBitmap();
-                Bitmap new_bm = changeBitmapContrastBrightness(bitmap, (float)(progress-1),(float)SeekBar_contrast.getProgress() - 255);
-                imageView.setImageBitmap(new_bm);
+
+                ImageView imageView = (ImageView) findViewById(R.id.imgView);
+                Bitmap bitmap = img.getBitmap();
+                img.changeBitmapContrastBrightness(progress,0);
+                imageView.setImageBitmap(img.getBitmap());
             }
         });
 
     }
-    public static Bitmap changeBitmapContrastBrightness(Bitmap bmp, float contrast, float brightness)
-    {
-        ColorMatrix cm = new ColorMatrix(new float[]
-                {
-                        contrast, 0, 0, 0,brightness,
-                        0, contrast, 0, 0,brightness,
-                        0, 0, contrast, 0,brightness,
-                        0, 0, 0, 1,0
-                });
 
-        Bitmap ret = Bitmap.createBitmap(bmp.getWidth(), bmp.getHeight(), bmp.getConfig());
 
-        Canvas canvas = new Canvas(ret);
-
-        Paint paint = new Paint();
-        paint.setColorFilter(new ColorMatrixColorFilter(cm));
-        canvas.drawBitmap(bmp, 0, 0, paint);
-
-        return ret;
-    }
 
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+
+
         if (requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && data != null) {
             selectedImage = data.getData();
             String[] filePathColumn = {MediaStore.Images.Media.DATA};
@@ -193,19 +162,21 @@ public class MainActivity extends AppCompatActivity {
             cursor.close();
             ImageView imageView = (ImageView) findViewById(imgView);
             imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
+            img = new Image(BitmapFactory.decodeFile(picturePath),"image " + Integer.toString(ct++));
         }
+
         if (requestCode == PIC_CROP && data != null) {
             Bundle extras = data.getExtras();
             Bitmap selectedBitmap = extras.getParcelable("data");
             ImageView imageView = (ImageView) findViewById(imgView);
             imageView.setImageBitmap(selectedBitmap);
+            img = new Image(selectedBitmap,"image " + Integer.toString(ct++));
         }
-        if(flag) {
-            flag = false;
+        if (requestCode == REQUEST_TAKE_IMAGE && data != null) {
             Bitmap bitmap = (Bitmap) data.getExtras().get("data");
             ImageView imageView = (ImageView) findViewById(R.id.imgView);
             imageView.setImageBitmap(bitmap);
-
+            img = new Image(bitmap,"image " + Integer.toString(ct++));
         }
     }
 
@@ -226,9 +197,6 @@ public class MainActivity extends AppCompatActivity {
             toast.show();
         }
     }
-
-
-
 
 
 }
